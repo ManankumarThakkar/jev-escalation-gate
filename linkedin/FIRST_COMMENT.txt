@@ -1,0 +1,17 @@
+Method notes, since a few people will want them.
+
+The task is answerability: given a passage and a question, return the probability the passage contains what is needed to answer. 600 items, 200 per slice, drawn from SQuAD 2.0 dev with a fixed seed.
+
+The three slices exist because "can it spot an unanswerable question" means different things depending on how you built the unanswerable ones:
+
+answerable, a question with the passage it was written from
+hard negative, SQuAD's own unanswerable questions, human written to look answerable
+easy negative, a real question paired with a passage from a different article
+
+That last slice is a contamination control. SQuAD is public and may be in training data, which would flatter the first two. Cross paired items are combinations that never existed, so they cannot be memorised. Worth noting the direction: if memorisation were doing the work, the hard negatives would be the easy ones. They are not.
+
+One question per request, sequential, identical instruction text fixed before the run. Batching questions into one call is cheaper and is what production code should do, but it would make per decision latency meaningless.
+
+The calibration noise floor is resampled, not assumed. A perfectly calibrated model measured on 400 items shows roughly 0.039 expected calibration error from sampling alone, so 0.047 is close to the floor rather than evidence of miscalibration.
+
+Repo with the code, the raw per item responses and the analysis: [link]

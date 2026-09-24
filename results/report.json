@@ -1,0 +1,332 @@
+{
+  "source_run": "raw-20260924T1549Z.json",
+  "endpoint_is_proxy": true,
+  "model": [
+    "jev-1.13.0"
+  ],
+  "n": 600,
+  "per_slice": {
+    "answerable": {
+      "n": 200,
+      "accuracy": 0.955,
+      "mean_p_answerable": 0.9124,
+      "median_p_answerable": 0.97
+    },
+    "easy_negative": {
+      "n": 200,
+      "accuracy": 1.0,
+      "mean_p_answerable": 0.0229,
+      "median_p_answerable": 0.02
+    },
+    "hard_negative": {
+      "n": 200,
+      "accuracy": 0.695,
+      "mean_p_answerable": 0.3389,
+      "median_p_answerable": 0.2
+    }
+  },
+  "realistic_mix": {
+    "description": "answerable + hard_negative; excludes the easy-negative control",
+    "n": 400,
+    "accuracy_at_0.5": 0.825,
+    "ece": 0.0467,
+    "ece_noise_floor": 0.0388,
+    "ece_over_floor": 1.2,
+    "reliability_bins": [
+      {
+        "bin": "0.50-0.55",
+        "n": 13,
+        "stated_confidence": 0.5154,
+        "observed_accuracy": 0.4615,
+        "gap": -0.0538
+      },
+      {
+        "bin": "0.55-0.60",
+        "n": 19,
+        "stated_confidence": 0.5716,
+        "observed_accuracy": 0.3684,
+        "gap": -0.2032
+      },
+      {
+        "bin": "0.60-0.65",
+        "n": 19,
+        "stated_confidence": 0.62,
+        "observed_accuracy": 0.6842,
+        "gap": 0.0642
+      },
+      {
+        "bin": "0.65-0.70",
+        "n": 13,
+        "stated_confidence": 0.6723,
+        "observed_accuracy": 0.4615,
+        "gap": -0.2108
+      },
+      {
+        "bin": "0.70-0.75",
+        "n": 14,
+        "stated_confidence": 0.7186,
+        "observed_accuracy": 0.4286,
+        "gap": -0.29
+      },
+      {
+        "bin": "0.75-0.80",
+        "n": 20,
+        "stated_confidence": 0.77,
+        "observed_accuracy": 0.7,
+        "gap": -0.07
+      },
+      {
+        "bin": "0.80-0.85",
+        "n": 26,
+        "stated_confidence": 0.8227,
+        "observed_accuracy": 0.7692,
+        "gap": -0.0535
+      },
+      {
+        "bin": "0.85-0.90",
+        "n": 46,
+        "stated_confidence": 0.8696,
+        "observed_accuracy": 0.8478,
+        "gap": -0.0217
+      },
+      {
+        "bin": "0.90-0.95",
+        "n": 66,
+        "stated_confidence": 0.9247,
+        "observed_accuracy": 0.8939,
+        "gap": -0.0308
+      },
+      {
+        "bin": "0.95-1.00",
+        "n": 164,
+        "stated_confidence": 0.9739,
+        "observed_accuracy": 0.9756,
+        "gap": 0.0017
+      }
+    ]
+  },
+  "coverage_curve_realistic": [
+    {
+      "band_half_width": 0.0,
+      "escalate_if_between": [
+        0.5,
+        0.5
+      ],
+      "coverage": 1.0,
+      "n_covered": 400,
+      "accuracy_on_covered": 0.825
+    },
+    {
+      "band_half_width": 0.025,
+      "escalate_if_between": [
+        0.475,
+        0.525
+      ],
+      "coverage": 0.9725,
+      "n_covered": 389,
+      "accuracy_on_covered": 0.838
+    },
+    {
+      "band_half_width": 0.05,
+      "escalate_if_between": [
+        0.45,
+        0.55
+      ],
+      "coverage": 0.9625,
+      "n_covered": 385,
+      "accuracy_on_covered": 0.839
+    },
+    {
+      "band_half_width": 0.075,
+      "escalate_if_between": [
+        0.425,
+        0.575
+      ],
+      "coverage": 0.945,
+      "n_covered": 378,
+      "accuracy_on_covered": 0.8519
+    },
+    {
+      "band_half_width": 0.1,
+      "escalate_if_between": [
+        0.4,
+        0.6
+      ],
+      "coverage": 0.9125,
+      "n_covered": 365,
+      "accuracy_on_covered": 0.863
+    },
+    {
+      "band_half_width": 0.125,
+      "escalate_if_between": [
+        0.375,
+        0.625
+      ],
+      "coverage": 0.89,
+      "n_covered": 356,
+      "accuracy_on_covered": 0.868
+    },
+    {
+      "band_half_width": 0.15,
+      "escalate_if_between": [
+        0.35,
+        0.65
+      ],
+      "coverage": 0.8725,
+      "n_covered": 349,
+      "accuracy_on_covered": 0.8711
+    },
+    {
+      "band_half_width": 0.175,
+      "escalate_if_between": [
+        0.325,
+        0.675
+      ],
+      "coverage": 0.8575,
+      "n_covered": 343,
+      "accuracy_on_covered": 0.8805
+    },
+    {
+      "band_half_width": 0.2,
+      "escalate_if_between": [
+        0.3,
+        0.7
+      ],
+      "coverage": 0.8325,
+      "n_covered": 333,
+      "accuracy_on_covered": 0.8889
+    },
+    {
+      "band_half_width": 0.225,
+      "escalate_if_between": [
+        0.275,
+        0.725
+      ],
+      "coverage": 0.815,
+      "n_covered": 326,
+      "accuracy_on_covered": 0.9018
+    },
+    {
+      "band_half_width": 0.25,
+      "escalate_if_between": [
+        0.25,
+        0.75
+      ],
+      "coverage": 0.805,
+      "n_covered": 322,
+      "accuracy_on_covered": 0.9068
+    },
+    {
+      "band_half_width": 0.275,
+      "escalate_if_between": [
+        0.225,
+        0.775
+      ],
+      "coverage": 0.7775,
+      "n_covered": 311,
+      "accuracy_on_covered": 0.9164
+    },
+    {
+      "band_half_width": 0.3,
+      "escalate_if_between": [
+        0.2,
+        0.8
+      ],
+      "coverage": 0.755,
+      "n_covered": 302,
+      "accuracy_on_covered": 0.9205
+    },
+    {
+      "band_half_width": 0.325,
+      "escalate_if_between": [
+        0.175,
+        0.825
+      ],
+      "coverage": 0.7225,
+      "n_covered": 289,
+      "accuracy_on_covered": 0.9273
+    },
+    {
+      "band_half_width": 0.35,
+      "escalate_if_between": [
+        0.15,
+        0.85
+      ],
+      "coverage": 0.69,
+      "n_covered": 276,
+      "accuracy_on_covered": 0.9348
+    },
+    {
+      "band_half_width": 0.375,
+      "escalate_if_between": [
+        0.125,
+        0.875
+      ],
+      "coverage": 0.6225,
+      "n_covered": 249,
+      "accuracy_on_covered": 0.9478
+    },
+    {
+      "band_half_width": 0.4,
+      "escalate_if_between": [
+        0.1,
+        0.9
+      ],
+      "coverage": 0.575,
+      "n_covered": 230,
+      "accuracy_on_covered": 0.9522
+    },
+    {
+      "band_half_width": 0.425,
+      "escalate_if_between": [
+        0.075,
+        0.925
+      ],
+      "coverage": 0.5075,
+      "n_covered": 203,
+      "accuracy_on_covered": 0.9655
+    },
+    {
+      "band_half_width": 0.45,
+      "escalate_if_between": [
+        0.05,
+        0.95
+      ],
+      "coverage": 0.39,
+      "n_covered": 156,
+      "accuracy_on_covered": 0.9808
+    },
+    {
+      "band_half_width": 0.475,
+      "escalate_if_between": [
+        0.025,
+        0.975
+      ],
+      "coverage": 0.24,
+      "n_covered": 96,
+      "accuracy_on_covered": 0.9792
+    },
+    {
+      "band_half_width": 0.5,
+      "escalate_if_between": [
+        0.0,
+        1.0
+      ],
+      "coverage": 0.0,
+      "n_covered": 0,
+      "accuracy_on_covered": null
+    }
+  ],
+  "latency_ms": {
+    "p50": 662.1,
+    "p95": 823.3,
+    "p99": 1753.7,
+    "note": "wall clock including a third-party proxy hop; not a server-side figure"
+  },
+  "cost": {
+    "total_usd": 0.127017,
+    "per_decision_usd": 0.0002117,
+    "median_input_tokens": 488.0,
+    "note": "one question per request; batching questions would lower this"
+  }
+}

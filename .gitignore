@@ -1,0 +1,5 @@
+# The 4.4 MB upstream dump. Fetched by the reproduce step, not vendored.
+data/squad2-dev.json
+__pycache__/
+*.pyc
+.env
