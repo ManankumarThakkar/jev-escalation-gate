@@ -1,8 +1,19 @@
-"""Render the post figure straight from results/report.json.
+"""Render the post figure straight from results/report.json, in both themes.
 
 Every number on the image is read from the report, so the figure cannot drift
 from the measurement. Change the experiment, re-run analyze.py, re-run this,
 and the picture follows.
+
+The layout is four stacked panels, in the order a reader needs them:
+
+  1. the hook      - the 30.5 point swing, which is the surprising part
+  2. the pattern   - where the gate actually sits, as a flow diagram, because
+                     an engineer cannot copy an idea they have only seen as a
+                     bar chart
+  3. the operating point - the numbers that decide whether it is worth doing
+  4. provenance    - repo, sample, and the caveats that keep it honest
+
+    python src/make_figure.py
 """
 
 import json
@@ -10,142 +21,194 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 REPORT = ROOT / "results" / "report.json"
-OUT = ROOT / "linkedin" / "figure.html"
+OUT_DIR = ROOT / "linkedin"
+REPO = "github.com/ManankumarThakkar/jev-escalation-gate"
 
-SLICE_LABEL = {
-    "easy_negative": "Random unrelated passage",
-    "answerable": "Passage does answer it",
-    "hard_negative": "On-topic, but silent on the fact",
-}
-SLICE_COLOR = {"easy_negative": "var(--s3)", "answerable": "var(--s1)", "hard_negative": "var(--s2)"}
-ORDER = ["easy_negative", "answerable", "hard_negative"]
+SLICES = [
+    ("easy_negative", "Random unrelated passage", "s3"),
+    ("answerable", "Passage does answer it", "s1"),
+    ("hard_negative", "On topic, silent on the fact", "s2"),
+]
 
 
-def main() -> int:
+def build(theme: str) -> str:
     r = json.loads(REPORT.read_text())
-    per = r["per_slice"]
-    curve = [c for c in r["coverage_curve_realistic"] if c["n_covered"]]
+    ps, rm, cost, lat = r["per_slice"], r["realistic_mix"], r["cost"], r["latency_ms"]
+    gate = next(c for c in r["coverage_curve_realistic"] if c["escalate_if_between"] == [0.1, 0.9])
+    keep = gate["coverage"] * 100
+    escalate = 100 - keep
+    acc_keep = gate["accuracy_on_covered"] * 100
+    lo, hi = gate["escalate_if_between"]
+    gap = (ps["easy_negative"]["accuracy"] - ps["hard_negative"]["accuracy"]) * 100
 
     bars = "\n".join(
-        f"""      <div class="barrow">
-        <div class="blabel">{SLICE_LABEL[s]}</div>
-        <div class="btrack"><div class="bfill" style="width:{per[s]['accuracy']*100:.1f}%;background:{SLICE_COLOR[s]}"></div></div>
-        <div class="bval">{per[s]['accuracy']*100:.1f}%</div>
-      </div>"""
-        for s in ORDER
+        f"""        <div class="row">
+          <div class="rl">{label}</div>
+          <div class="rt"><div class="rf {cls}" style="width:{ps[key]['accuracy']*100:.1f}%"></div></div>
+          <div class="rv">{ps[key]['accuracy']*100:.1f}%</div>
+        </div>"""
+        for key, label, cls in SLICES
     )
 
-    # Coverage curve: x = coverage, y = accuracy on covered.
-    xs = [c["coverage"] for c in curve]
-    ys = [c["accuracy_on_covered"] for c in curve]
-    y_lo, y_hi = 0.80, 1.00
-    pts = []
-    for x, y in zip(xs, ys):
-        px = 70 + (1 - x) * 800          # coverage falls left to right
-        py = 400 - (y - y_lo) / (y_hi - y_lo) * 340
-        pts.append(f"{px:.1f},{py:.1f}")
-    polyline = " ".join(pts)
+    dark = theme == "dark"
+    tokens = (
+        """--bg:#14140f; --panel:#1f1f1a; --panel2:#262620; --ink:#ffffff;
+       --ink2:#c9c8bc; --ink3:#8f8e84; --line:#37372f;
+       --s1:#3987e5; --s2:#d95926; --s3:#199e70; --track:#2c2c25;"""
+        if dark
+        else """--bg:#fbfaf7; --panel:#ffffff; --panel2:#f3f2ed; --ink:#0b0b0b;
+       --ink2:#4c4b47; --ink3:#76756f; --line:#e4e2db;
+       --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --track:#eeece6;"""
+    )
+    shadow = "none" if dark else "0 1px 2px rgba(0,0,0,.05)"
 
-    # The operating point the README highlights: the widest band that still
-    # clears 0.95 accuracy on the covered slice.
-    best = next((c for c in curve if c["accuracy_on_covered"] and c["accuracy_on_covered"] >= 0.95), curve[-1])
-    bx = 70 + (1 - best["coverage"]) * 800
-    by = 400 - (best["accuracy_on_covered"] - y_lo) / (y_hi - y_lo) * 340
-
-    gap = (per["easy_negative"]["accuracy"] - per["hard_negative"]["accuracy"]) * 100
-    lat = r["latency_ms"]
-    cost = r["cost"]
-
-    html = f"""<!doctype html>
-<html lang="en"><head><meta charset="utf-8">
+    return f"""<!doctype html>
+<html lang="en" data-theme="{theme}"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Escalation Gate</title>
 <style>
-  :root {{
-    --surface:#fcfcfb; --card:#f4f3f0; --ink:#0b0b0b; --ink2:#52514e; --ink3:#76756f;
-    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --grid:#e3e2de;
-  }}
-  @media (prefers-color-scheme: dark) {{ :root:not([data-theme="light"]) {{
-    --surface:#1a1a19; --card:#232320; --ink:#fff; --ink2:#c3c2b7; --ink3:#8f8e86;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --grid:#35342f;
-  }} }}
-  :root[data-theme="dark"] {{
-    --surface:#1a1a19; --card:#232320; --ink:#fff; --ink2:#c3c2b7; --ink3:#8f8e86;
-    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --grid:#35342f;
-  }}
+  :root {{ {tokens} }}
   *{{box-sizing:border-box}} html,body{{margin:0;padding:0}}
-  body{{background:#f0efec;color:var(--ink);
+  body{{background:var(--bg);color:var(--ink);
     font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    font-feature-settings:"tnum" 1;display:flex;justify-content:center;padding:12px}}
-  .stage{{width:1080px;height:1350px;background:var(--surface);padding:58px 56px 40px;
-    display:flex;flex-direction:column;transform-origin:top left}}
-  .kicker{{font-size:21px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3);font-weight:650}}
-  h1{{font-size:56px;line-height:1.06;font-weight:700;letter-spacing:-.03em;margin:14px 0 0}}
-  .sub{{font-size:24px;color:var(--ink2);line-height:1.45;margin-top:14px;font-weight:450}}
-  h2{{font-size:24px;font-weight:700;margin:30px 0 0;display:flex;align-items:center;gap:12px}}
-  h2::after{{content:"";flex:1;height:1px;background:var(--grid)}}
-  .barrow{{display:grid;grid-template-columns:330px 1fr 92px;gap:18px;align-items:center;margin-top:14px}}
-  .blabel{{font-size:20px;color:var(--ink2);line-height:1.25}}
-  .btrack{{height:40px;background:var(--card);border-radius:5px;overflow:hidden}}
-  .bfill{{height:100%;border-radius:5px}}
-  .bval{{font-size:30px;font-weight:700;text-align:right;letter-spacing:-.02em}}
-  .note{{font-size:20px;color:var(--ink2);margin-top:16px;line-height:1.45}}
-  .note b{{color:var(--ink);font-weight:700}}
-  svg{{margin-top:8px}}
-  .axis{{font-size:17px;fill:var(--ink3)}}
-  .footer{{margin-top:auto;padding-top:14px;border-top:1px solid var(--grid);
-    font-size:16px;color:var(--ink3);line-height:1.45}}
+    font-feature-settings:"tnum" 1;display:flex;justify-content:center}}
+  .stage{{width:1080px;height:1350px;background:var(--bg);padding:44px 44px 34px;
+    display:flex;flex-direction:column;gap:24px;transform-origin:top left}}
+
+  .kicker{{font-size:19px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink3);font-weight:700}}
+  h1{{font-size:66px;line-height:1.0;font-weight:750;letter-spacing:-.035em;margin:10px 0 0}}
+  h1 .hl{{color:var(--s2)}}
+  .dek{{font-size:22px;color:var(--ink2);line-height:1.4;margin-top:12px;font-weight:450;max-width:880px}}
+
+  .panel{{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:30px 30px;box-shadow:{shadow}}}
+  .ptitle{{font-size:15px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--ink3);font-weight:750;margin-bottom:14px}}
+
+  .row{{display:grid;grid-template-columns:290px 1fr 86px;gap:14px;align-items:center;margin-top:10px}}
+  .rl{{font-size:18px;color:var(--ink2);line-height:1.2}}
+  .rt{{height:32px;background:var(--track);border-radius:4px;overflow:hidden}}
+  .rf{{height:100%;border-radius:4px}}
+  .s1{{background:var(--s1)}} .s2{{background:var(--s2)}} .s3{{background:var(--s3)}}
+  .rv{{font-size:26px;font-weight:750;text-align:right;letter-spacing:-.02em}}
+  .gapnote{{font-size:18px;color:var(--ink2);margin-top:14px;line-height:1.4}}
+  .gapnote b{{color:var(--ink)}}
+
+  .stats{{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}}
+  .stat{{background:var(--panel2);border-radius:14px;padding:26px 24px}}
+  .sv{{font-size:44px;font-weight:750;letter-spacing:-.03em;line-height:1}}
+  .sl{{font-size:16px;color:var(--ink2);margin-top:7px;line-height:1.3}}
+
+  footer{{margin-top:auto;display:flex;justify-content:space-between;
+    align-items:flex-end;gap:20px;padding-top:20px;border-top:1px solid var(--line)}}
+  .repo{{font-size:21px;font-weight:750;color:var(--ink);letter-spacing:-.015em;white-space:nowrap}}
+  .repolab{{font-size:15px;color:var(--ink3);letter-spacing:.1em;
+    text-transform:uppercase;font-weight:700;margin-bottom:5px}}
+  .caveat{{font-size:14px;color:var(--ink3);line-height:1.45;text-align:right;max-width:372px}}
 </style></head><body>
 <div class="stage" id="stage">
-  <div class="kicker">600 decisions &middot; jev-1.13.0 &middot; ${cost['total_usd']:.3f}</div>
-  <h1>The same gate scored 100% and {per['hard_negative']['accuracy']*100:.1f}%.</h1>
-  <div class="sub">One model, one prompt, one afternoon. The only thing that changed was how
-  the wrong answers in the test set were built.</div>
 
-  <h2>&ldquo;Can this passage answer this question?&rdquo;</h2>
-{bars}
-  <div class="note">A <b>{gap:.1f}-point gap</b>. Random passages are easy to reject. Passages that are
-  on-topic but do not contain the fact, which is
-  what a retrieval miss actually looks like, get waved through about three times in ten.</div>
-
-  <h2>But the confidence number is honest, so you can gate on it</h2>
-  <svg viewBox="0 0 960 440" width="100%" height="440" role="img"
-       aria-label="Accuracy on auto-handled traffic rises as coverage falls">
-    <line x1="70" y1="400" x2="930" y2="400" stroke="var(--grid)" stroke-width="1"/>
-    <line x1="70" y1="60" x2="930" y2="60" stroke="var(--grid)" stroke-width="1"/>
-    <text class="axis" x="70" y="52">100% accurate on what it keeps</text>
-    <text class="axis" x="70" y="422">80%</text>
-    <text class="axis" x="790" y="422">fewer decisions kept &rarr;</text>
-    <polyline points="{polyline}" fill="none" stroke="var(--s1)" stroke-width="3.5"
-      stroke-linejoin="round" stroke-linecap="round"/>
-    <circle cx="{bx:.1f}" cy="{by:.1f}" r="9" fill="var(--s1)" stroke="var(--surface)" stroke-width="3"/>
-    <text x="{bx - 12:.1f}" y="{by - 24:.1f}" text-anchor="end" font-size="23" font-weight="700" fill="var(--ink)">
-      {best['coverage']*100:.0f}% of traffic at {best['accuracy_on_covered']*100:.1f}%
-    </text>
-  </svg>
-  <div class="note">Escalate anything it scores between {best['escalate_if_between'][0]:.2f} and
-  {best['escalate_if_between'][1]:.2f}; answer the rest yourself. Calibration error
-  {r['realistic_mix']['ece']:.3f} against a {r['realistic_mix']['ece_noise_floor']:.3f} noise floor,
-  so the probability means roughly what it says.</div>
-
-  <div class="footer">
-    SQuAD 2.0, 200 items per slice, seeded and reproducible. p50 {lat['p50']:.0f} ms,
-    ${cost['per_decision_usd']:.6f} per decision, measured through a third-party proxy,
-    so treat latency as an upper bound. No large-model baseline was run.
+  <div>
+    <div class="kicker">600 measured decisions &middot; jev-1.13.0 &middot; ${cost['total_usd']:.3f}</div>
+    <h1>The same gate scored 100% and <span class="hl">{ps['hard_negative']['accuracy']*100:.1f}%</span>.</h1>
+    <div class="dek">One model, one prompt, one dataset. The only thing that changed was how the
+    wrong answers in the test set were built.</div>
   </div>
+
+  <div class="panel">
+    <div class="ptitle">&ldquo;Can this passage answer this question?&rdquo;</div>
+{bars}
+    <div class="gapnote">A <b>{gap:.1f} point gap</b>. Random passages are trivial to reject.
+    Passages that are on topic but silent on the fact, which is what a retrieval miss really
+    looks like, get waved through about <b>three times in ten</b>.</div>
+  </div>
+
+  <div class="panel">
+    <div class="ptitle">So don't let it answer everything. Let it answer what it is sure about.</div>
+    <svg viewBox="0 0 990 290" width="100%" height="290" role="img"
+         aria-label="Question and passage enter the gate; confident cases are answered directly, uncertain cases escalate to a large model">
+      <defs>
+        <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="var(--ink3)"/>
+        </marker>
+      </defs>
+
+      <rect x="0" y="96" width="200" height="68" rx="12" fill="var(--panel2)"/>
+      <text x="100" y="124" text-anchor="middle" font-size="19" font-weight="650" fill="var(--ink)">Question +</text>
+      <text x="100" y="147" text-anchor="middle" font-size="19" font-weight="650" fill="var(--ink)">retrieved passage</text>
+
+      <line x1="206" y1="130" x2="256" y2="130" stroke="var(--ink3)" stroke-width="2.5" marker-end="url(#a)"/>
+
+      <rect x="264" y="82" width="196" height="96" rx="12" fill="var(--s1)"/>
+      <text x="362" y="116" text-anchor="middle" font-size="24" font-weight="750" fill="#fff">Jev gate</text>
+      <text x="362" y="143" text-anchor="middle" font-size="17" fill="#fff" opacity=".93">{lat['p50']:.0f} ms &middot; ${cost['per_decision_usd']:.6f}</text>
+      <text x="362" y="164" text-anchor="middle" font-size="16" fill="#fff" opacity=".8">returns 0.00 to 1.00</text>
+
+      <path d="M466,110 L512,110 L512,44 L556,44" stroke="var(--s3)" stroke-width="2.5"
+            fill="none" marker-end="url(#a)"/>
+      <path d="M466,150 L512,150 L512,216 L556,216" stroke="var(--s2)" stroke-width="2.5"
+            fill="none" marker-end="url(#a)"/>
+
+      <rect x="564" y="8" width="426" height="72" rx="12" fill="var(--panel2)" stroke="var(--s3)" stroke-width="2"/>
+      <text x="586" y="36" font-size="18" font-weight="700" fill="var(--s3)">score below {lo:.2f} or above {hi:.2f}</text>
+      <text x="586" y="62" font-size="19" font-weight="650" fill="var(--ink)">answer it yourself, no big model</text>
+
+      <rect x="564" y="180" width="426" height="72" rx="12" fill="var(--panel2)" stroke="var(--s2)" stroke-width="2"/>
+      <text x="586" y="208" font-size="18" font-weight="700" fill="var(--s2)">score between {lo:.2f} and {hi:.2f}</text>
+      <text x="586" y="234" font-size="19" font-weight="650" fill="var(--ink)">escalate to the large model</text>
+    </svg>
+  </div>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="sv" style="color:var(--s3)">{keep:.1f}%</div>
+      <div class="sl">of decisions never reach the expensive model</div>
+    </div>
+    <div class="stat">
+      <div class="sv">{acc_keep:.1f}%</div>
+      <div class="sl">accurate on the ones it keeps</div>
+    </div>
+    <div class="stat">
+      <div class="sv" style="color:var(--s2)">{escalate:.1f}%</div>
+      <div class="sl">escalated, and they are the genuinely hard ones</div>
+    </div>
+  </div>
+
+  <footer>
+    <div>
+      <div class="repolab">Code, raw data, analysis</div>
+      <div class="repo">{REPO}</div>
+    </div>
+    <div class="caveat">
+      SQuAD 2.0, 200 items per slice, seeded and reproducible. Calibration error
+      {rm['ece']:.3f} against a {rm['ece_noise_floor']:.3f} noise floor. Latency measured
+      through a third party proxy, so treat it as an upper bound. No large model
+      baseline was run.
+    </div>
+  </footer>
+
 </div>
 <script>
   function fit(){{const s=document.getElementById('stage');
-    const k=Math.min(1,(window.innerWidth-24)/1080,(window.innerHeight-24)/1350);
+    const k=Math.min(1,window.innerWidth/1080,window.innerHeight/1350);
     s.style.transform='scale('+k+')';}}
   addEventListener('resize',fit);fit();
 </script></body></html>
 """
-    OUT.parent.mkdir(exist_ok=True)
-    OUT.write_text(html)
-    print(f"wrote {OUT}")
-    print(f"  gap {gap:.1f} points | operating point {best['coverage']*100:.1f}% @ "
-          f"{best['accuracy_on_covered']*100:.1f}% | band {best['escalate_if_between']}")
+
+
+def main() -> int:
+    OUT_DIR.mkdir(exist_ok=True)
+    for theme in ("light", "dark"):
+        path = OUT_DIR / f"figure-{theme}.html"
+        path.write_text(build(theme))
+        print(f"wrote {path}")
+
+    r = json.loads(REPORT.read_text())
+    gate = next(c for c in r["coverage_curve_realistic"] if c["escalate_if_between"] == [0.1, 0.9])
+    print(f"  keep {gate['coverage']*100:.1f}% at {gate['accuracy_on_covered']*100:.1f}% | "
+          f"escalate {(1-gate['coverage'])*100:.1f}% | band {gate['escalate_if_between']}")
     return 0
 
 
