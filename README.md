@@ -1,221 +1,223 @@
-# Can a small judgment model own part of your traffic?
+# 🚦 The Escalation Gate
 
-An independent experiment with **Jev**, TypeSafe AI's System One model, on one
-narrow question: *how much work can a fast, cheap, calibrated decision model
-take off an expensive model's plate, and how would you know?*
+**How much work can a small, cheap AI model take off an expensive one's plate, and how would you actually know?**
 
-600 real decisions, $0.127, reproducible from this repository.
+600 real decisions. 13 cents. Every number reproducible from this repo.
+
+![Results](linkedin/figure.png)
 
 ---
 
-## The problem this is about
+## 🎯 TL;DR
 
-A retrieval-augmented system does this constantly:
+Three things came out of this, and the first one is the reason to read on:
 
-1. A user asks something.
-2. Retrieval returns a passage.
-3. A large model is called to generate an answer from that passage.
+1. **The same gate scored 100% and 69.5%** on the same model, same prompt, same afternoon. The only difference was how I built the wrong answers in the test set. Build your test the convenient way and you will ship something far worse than you measured.
+2. **The confidence number is honest.** When the model said it was 97% sure, it was right 97.6% of the time.
+3. **Because of #2, you can route on it.** Hand the model the decisions it is confident about and escalate the rest, and it answers **57.5% of traffic at 95.2% accuracy**. Six decisions in ten never reach the expensive model.
 
-Step 3 is the expensive step, and it runs whether or not the passage can
-actually answer the question. When retrieval misses, you pay full price to
-generate a confident-sounding answer from a passage that never contained the
-fact — the worst outcome available.
+---
 
-The obvious fix is a cheap gate in front of step 3: *can this passage answer
-this question at all?* That is a small, repetitive, high-volume judgement. It
-is exactly what a System One model claims to be for.
+## 🧠 The problem, in plain English
 
-The interesting engineering question is not whether Jev is as good as a large
-model. It is **whether it knows when it is unsure**, because that is what lets
-you give it a slice of traffic and escalate the rest.
+Imagine a chatbot that answers questions about your company's documents. It works in two steps:
 
-## What Jev is, briefly
+1. **Search** the documents and pull back the most relevant page.
+2. **Ask a large AI model** to write an answer using that page.
 
-Jev takes a `state` (any text) and typed `questions`, and returns typed answers
-rather than prose. Three primitives: `choice` (one of up to 255 labelled
-options), `score` (an ordered scale), and `noul` (a yes/no as a probability
-from 0 to 1). It cannot return a malformed answer, because the shape is fixed
-by the request.
+Step 2 is the expensive one. It costs real money and takes real time, and here is the catch: **it runs whether or not the page actually contains the answer.**
 
-TypeSafe trained it with RLCD — Reinforcement Learning for Calibrated Decisions
-— and state the goal plainly: *"when Jev says it's 80% sure, it should be right
-about 80% of the time."* That is a falsifiable claim, so this repository checks
-it.
+When the search misses, you pay full price for the AI to write a confident, fluent, completely wrong answer from a page that never held the fact. That is the worst outcome available: expensive *and* misleading.
 
-This experiment uses one `noul` question per item.
+The obvious fix is a cheap bouncer at the door:
 
-## The experiment
+> "Before we spend the money, can this page even answer this question?"
 
-**Task.** Answerability gating. Given a passage and a question, return the
-probability that the passage contains the information needed to answer it.
+That is a small, boring, repetitive judgement. It happens thousands of times a day. It is too fuzzy for a simple rule, and far too small to justify calling an expensive model every time.
 
-**Data.** [SQuAD 2.0 dev](https://rajpurkar.github.io/SQuAD-explorer/), 600
-items in three slices of 200. Ground truth comes from the dataset and from
-construction, not from a model and not from my own judgement:
+**This repo tests whether a specialised small model can be that bouncer.**
 
-| Slice | How it is built | Correct answer |
+---
+
+## 🤔 What is Jev?
+
+[Jev](https://jevtypesafeai.com/what-is-jev) is TypeSafe AI's "System One" model. The name borrows from psychology: System Two is slow, deliberate reasoning (what large language models do), System One is the fast, instinctive judgement you make without thinking.
+
+The practical difference from a normal AI model:
+
+| A normal LLM | Jev |
+|---|---|
+| Writes text back at you | Returns a **typed answer** your code can use directly |
+| Can produce any shape, so you parse and pray | **Cannot** produce an invalid shape, ever |
+| Seconds, cents | Sub-second, tiny fractions of a cent |
+| Great at open-ended work | Built for small, repeated decisions |
+
+You give it some context and a typed question, and it gives back one of three things:
+
+- **choice** - pick one of up to 255 labelled options
+- **score** - a rating on a scale you define
+- **noul** - a yes/no as a probability from 0 to 1
+
+That last one is what this experiment uses. And critically, TypeSafe claim those probabilities are **calibrated**: *"when Jev says it's 80% sure, it should be right about 80% of the time."*
+
+That is a falsifiable claim. So I tested it.
+
+---
+
+## 🧪 What I actually did
+
+**The task:** show the model a passage and a question, and ask for the probability that the passage contains what is needed to answer.
+
+**The data:** 600 items from [SQuAD 2.0](https://rajpurkar.github.io/SQuAD-explorer/), a public reading-comprehension dataset. The correct answers come from the dataset and from how the items are constructed, never from my own opinion.
+
+I split it into three groups of 200, and this split is where the interesting part came from:
+
+| Group | What it is | Correct answer |
 |---|---|---|
-| `answerable` | A question paired with the passage it was written from | yes |
-| `hard_negative` | SQuAD 2.0's own unanswerable questions — written by humans to *look* answerable from that passage | no |
-| `easy_negative` | A real question paired with a passage from a different article | no |
+| ✅ **Answerable** | A question shown with the passage it was written from | yes |
+| 😈 **Hard negative** | A question humans deliberately wrote to *look* answerable from that passage, but which it does not answer | no |
+| 🙂 **Easy negative** | A real question shown a passage from a completely different article | no |
 
-The third slice is a **contamination control**. SQuAD 2.0 is public and may be
-in the model's training data, which would flatter the first two slices. The
-cross-paired negatives are combinations that have never existed before, so they
-cannot have been memorised.
+The easy group is a **cheating check**. SQuAD is a famous public dataset and may well be in the model's training data, which would make it look better than it is. The easy group pairs things that have never been paired before, so it cannot have been memorised.
 
-**Method.** One question per request, sequential, identical instruction text
-for every item, fixed before the run. Batching questions into one call would be
-cheaper and is what production code should do; it would also make per-decision
-latency meaningless, and latency is under test.
+---
 
-## Results
+## 📊 What happened
 
-Model `jev-1.13.0`, 600 items, 0 failures, **$0.127 total**.
+Model `jev-1.13.0`, 600 items, zero failures, **$0.127 total**.
 
-### Accuracy depends almost entirely on how the negatives were made
+### 1️⃣ The test set decided the score
 
-| Slice | n | Accuracy | Mean p(answerable) |
-|---|---:|---:|---:|
-| `easy_negative` | 200 | **1.000** | 0.023 |
-| `answerable` | 200 | 0.955 | 0.912 |
-| `hard_negative` | 200 | **0.695** | 0.339 |
+| Group | Accuracy | What that means |
+|---|---:|---|
+| 🙂 Easy negative | **100.0%** | Perfect. Obviously unrelated pages are trivial to reject. |
+| ✅ Answerable | 95.5% | Very good at spotting a page that genuinely answers. |
+| 😈 Hard negative | **69.5%** | It waves through roughly 3 in 10 pages that look right but are silent on the fact. |
 
-A **30-point gap** between the two kinds of negative. On passages that are
-obviously unrelated, the gate is perfect and extremely confident. On passages
-that are on-topic but do not contain the fact — which is what a retrieval miss
-actually looks like — it says "yes, answerable" about three times in ten.
+**That is a 30.5 point swing on one model, decided entirely by how I built the test.**
 
-Note the direction of the contamination argument: if memorisation were doing
-the work, the hard negatives (which *are* in the public dataset) should be the
-easy ones. They are not. The difficulty is real.
+Here is why it matters: a real search miss does not look like a random page. It looks like a page that is *on topic and quietly missing the one fact you need*. That is the hard group. If I had built my test the easy way, I would have measured 100%, felt great, and shipped a bouncer that is actually 70%.
 
-### Calibration holds
+One nice detail on the cheating check: if memorisation were doing the work, the hard group (which *is* the public dataset) should be the easy one. It is not. The difficulty is real.
 
-Over the realistic mix (`answerable` + `hard_negative`, n=400):
+### 2️⃣ The confidence number is trustworthy
 
-- Accuracy at a 0.5 threshold: **0.825**
-- Expected calibration error: **0.047**
-- ECE noise floor at this sample size: **0.039** → measured ECE is **1.2×** the floor
+Over the realistic mix (answerable + hard negatives):
 
-A perfectly calibrated model measured on 400 items would show about 0.039 by
-sampling noise alone, so 0.047 is close to as good as this sample can
-demonstrate. The claim survives the test.
+- Raw accuracy: **82.5%**
+- Calibration error: **0.047**, against a **0.039** noise floor for this sample size
 
-Where it matters most, it is very good. The highest-confidence bin:
+That second number matters. Even a *perfectly* calibrated model measured on 400 items would score about 0.039 just from random chance. So 0.047 is about as honest as this sample can demonstrate. The claim holds.
 
-| Stated confidence | n | Observed accuracy | Gap |
-|---|---:|---:|---:|
-| 0.95 – 1.00 | 164 | 0.976 | **+0.002** |
+And where it counts most, it is excellent:
 
-The middle bins are noisier and lean over-confident (the 0.70–0.75 bin observes
-0.429 against a stated 0.719), but each holds only 13–20 items, which is too
-few to conclude much.
+| When it said... | it was right... | across |
+|---|---|---|
+| 97% sure | **97.6%** of the time | 164 items |
 
-### The number that decides the architecture
+### 3️⃣ Which means you can build the gate
 
-Auto-handle a decision when the probability is outside an escalation band;
-send the rest to a large model.
+Let the model answer when it is confident, and escalate when it is not:
 
-| Escalate when p is between | Coverage | Accuracy on covered |
+| Escalate when the score is between | Decisions it keeps | Accuracy on those |
 |---|---:|---:|
-| — (auto-handle everything) | 100% | 0.825 |
-| 0.30 – 0.70 | 83.3% | 0.889 |
-| 0.20 – 0.80 | 75.5% | 0.920 |
-| **0.10 – 0.90** | **57.5%** | **0.952** |
-| 0.07 – 0.93 | 50.7% | 0.966 |
-| 0.03 – 0.97 | 24.0% | 0.979 |
+| nothing (it answers everything) | 100% | 82.5% |
+| 0.30 - 0.70 | 83.3% | 88.9% |
+| 0.20 - 0.80 | 75.5% | 92.0% |
+| **0.10 - 0.90** | **57.5%** | **95.2%** |
+| 0.03 - 0.97 | 24.0% | 97.9% |
 
-**Roughly 6 decisions in 10 can be made at 95% accuracy for about two
-hundredths of a cent each**, with the remaining 4 escalated. That is the
-practical result, and it exists only because the confidence number means
-something — an uncalibrated model would give you a coverage knob that does not
-buy accuracy.
+**Roughly 6 decisions in 10 handled at 95% accuracy, for about two hundredths of a cent each.** The other 4 go to the expensive model, and they are precisely the ones the small model was unsure about.
 
-### Measured latency and cost
+This only works because the confidence is honest. An unreliable confidence score would give you a dial that does nothing.
+
+### 💵 Speed and cost, measured
 
 | | Measured here | TypeSafe's published figure |
 |---|---|---|
-| Latency p50 / p95 / p99 | 662 / 823 / 1754 ms | 70–500 ms |
-| Cost per decision | $0.000212 | ≈ $0.0004 |
-| Median input tokens per request | 488 | — |
+| Speed (median) | 662 ms | 70-500 ms |
+| Cost per decision | $0.000212 | ~$0.0004 |
 
-The latency figures are **not comparable** to the published ones and should not
-be read as contradicting them: these calls went through
-`jevtypesafeai.com`, a third-party metered proxy, because a `jv_live_` key is
-a proxy credential and the official `api.typesafe.ai/v1/systemone` endpoint
-rejects it with a 401. The measurement includes a proxy hop and public internet
-from a single location. Set `JEV_ENDPOINT` to the official URL with a TypeSafe
-key to measure the model rather than the path to it.
+⚠️ **Do not read my speed number as contradicting theirs.** My calls went through a third-party proxy (see Limitations), so the measurement includes an extra network hop. Treat it as an upper bound.
 
-Two pricing pages disagree by 10× on the per-token rate ($0.042 vs $0.42 per
-million input tokens), so the cost above is taken from the `usage.cost_usd`
-the API itself returned on each call rather than from either page.
+---
 
-## What I would take from this
+## 💡 What you can take away
 
-**Test your gate with hard negatives or you will ship the wrong number.** The
-same model, same prompt, same day scored 100% and 69.5% depending only on how
-the negative cases were constructed. A benchmark built from random pairings
-would have told me this gate was flawless.
+Useful even if you never touch Jev:
 
-**A small model does not have to be as good as a large one to be worth
-deploying.** It has to be honest about its uncertainty. 82.5% accuracy sounds
-mediocre; 95.2% on 57.5% of traffic is an architecture.
+**🎯 Test with hard cases or your number is fiction.** Same model, same day, 100% vs 69.5%. The only variable was test construction. This applies to any filter, classifier, or guardrail you have ever shipped.
 
-**Calibration is the feature, not the accuracy.** Everything useful here comes
-from the probability meaning what it says. If it did not, the coverage curve
-would be flat and there would be no gate to build.
+**⚖️ A small model does not have to beat the big one to earn its place.** It has to be honest about when it is unsure. "82.5% accurate" sounds mediocre. "95.2% on 57.5% of traffic, rest escalated" is an architecture.
 
-## Limitations
+**🔑 Calibration is the feature, not accuracy.** Everything useful here flows from the probability meaning what it says. Without that, there is no dial to turn and no gate to build.
 
-- **One task, one dataset, one language.** Answerability over English
-  Wikipedia. Nothing here generalises to routing, ranking, or risk scoring
-  without re-measuring.
-- **600 items.** Enough for the slice gap, thin for the per-bin calibration
-  figures (13–20 items in the middle bins).
-- **A public benchmark.** SQuAD 2.0 may be in training data. The easy-negative
-  control addresses this, but does not eliminate it.
-- **Measured through a proxy**, so latency is an upper bound and is not the
-  model's own figure.
-- **No large-model baseline.** I did not have API access to a frontier model,
-  so this does not show what a large model would score on the same items. The
-  comparison here is between Jev's confident slice and its uncertain slice —
-  not between Jev and anything else.
-- **One question per request.** Batching would lower cost per decision.
+---
 
-## Reproduce it
+## 👥 Who this is for
 
-Python 3.11+, no third-party dependencies.
+**Engineers building RAG or AI agents** - this is a working pattern you can lift: cheap gate in front, expensive model behind, threshold chosen from a measured curve instead of a guess.
+
+**Anyone running up an AI bill** - the cheapest call is the one you do not make. This shows how to find out which calls those are, with evidence instead of vibes.
+
+**Engineers who evaluate models** - the three-slice design (including a contamination control) is reusable for any classifier, and the resampled noise floor is worth stealing.
+
+**Engineering leaders and recruiters** - the short version: this asks whether a cheap component can safely replace part of an expensive one, answers it with 600 measured decisions for 13 cents, finds the *measurement method* was the biggest lever, and states plainly what was not tested.
+
+---
+
+## ⚠️ Limitations
+
+Stated up front, because a number whose limits are known is worth more than a better one that hides them.
+
+- **One task, one dataset, one language.** Nothing here transfers to routing or risk scoring without re-measuring.
+- **600 items.** Plenty for the group comparison, thin for the per-bucket calibration detail (13-20 items in some middle buckets).
+- **A public benchmark.** SQuAD may be in training data. The easy-negative control addresses this but does not eliminate it.
+- **Measured through a proxy.** A `jv_live_` key is issued by jevtypesafeai.com, a third-party metered proxy; the official `api.typesafe.ai` endpoint rejects it with a 401. Latency is an upper bound, not the model's own figure.
+- **No large-model baseline.** 🚨 The biggest gap. I had no frontier-model API access, so this compares Jev's confident slice against its uncertain slice, **not** Jev against GPT or Claude. Nothing here says which is better.
+- **One question per request.** Batching would lower the cost per decision.
+
+The two pricing pages also disagree by 10x on the token rate ($0.042 vs $0.42 per million), so every cost figure here comes from what the API itself billed, not from either page.
+
+---
+
+## 🔁 Reproduce it
+
+Python 3.11+. No third-party dependencies.
 
 ```bash
-export JEV_API_KEY=...            # get one from the endpoint you intend to use
-python src/dataset.py --n 200     # rebuild the eval set (seeded, deterministic)
+export JEV_API_KEY=...            # from whichever endpoint you use
+python src/dataset.py --n 200     # rebuild the test set (seeded, deterministic)
 python src/run_experiment.py      # ~7 minutes, ~$0.13
-python src/analyze.py             # recompute every number in this README
+python src/analyze.py             # recompute every number above
+python src/make_figure.py         # regenerate the chart from those numbers
 ```
 
-`results/raw-*.json` holds every per-item response, so the analysis can be
-re-run without spending the API budget again.
+Every raw response is committed in `results/`, so you can re-run the analysis without spending anything.
 
-## Layout
+---
+
+## 📁 What's in here
 
 ```
-src/dataset.py         build the three slices from SQuAD 2.0, seeded
-src/jev.py             minimal stdlib Jev client
-src/run_experiment.py  one call per item, records latency/tokens/cost
-src/analyze.py         accuracy, calibration, coverage curve, ECE noise floor
-results/raw-*.json     every raw response
-results/report.json    computed metrics
-linkedin/              post copy and the figure
+src/dataset.py          builds the three groups from SQuAD 2.0, seeded
+src/jev.py              tiny Jev client, standard library only
+src/run_experiment.py   one call per item, records speed/tokens/cost
+src/analyze.py          accuracy, calibration, noise floor, coverage curve
+src/make_figure.py      renders the chart straight from the results
+results/raw-*.json      every single response, unedited
+results/report.json     computed metrics
+docs/DECISIONS.md       why this task, why three groups, why no baseline
+linkedin/               the write-up and the figure
 ```
 
-## Sources
+---
+
+## 🔗 Sources
 
 - [What is Jev](https://jevtypesafeai.com/what-is-jev)
 - [Introducing System One Models & Jev](https://typesafe.ai/blog/introducing-system-one-models-and-jev)
 - [Building a harness with Jev (LangChain)](https://www.langchain.com/blog/building-a-harness-with-jev)
 - [SQuAD 2.0](https://rajpurkar.github.io/SQuAD-explorer/)
 
-Vendor performance figures above are labelled as claims. Everything in the
-Results section was measured by the code in this repository.
+Vendor performance figures are labelled as claims throughout. **Everything in the results section was measured by the code in this repository.**
