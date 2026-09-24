@@ -1,0 +1,36 @@
+The same gate scored 100% and 69.5% on the same afternoon.
+
+One model, one prompt, one dataset. The only thing I changed was how I built the wrong answers in the test set.
+
+Every RAG system has the same expensive step. Retrieval returns a passage, then a large model answers from it, whether or not that passage can answer anything. When retrieval misses, you pay full price for a confident answer built on a passage that never held the fact.
+
+So you put a cheap gate in front: can this passage answer this question at all?
+
+I built that gate with Jev, TypeSafe AI's System One model. You hand it program state and typed questions; it returns a choice, a score, or a yes/no probability instead of prose. It cannot emit a malformed shape. It exists for judgments too fuzzy for an if statement and too small to justify a frontier call each.
+
+600 decisions, 13 cents.
+
+I built the "no" cases two ways: random unrelated passages, and SQuAD 2.0's own unanswerable questions, which humans wrote specifically to look answerable from that passage.
+
+Random passages: 100% accurate.
+Plausible ones: 69.5%.
+
+A 30.5 point gap on the same model, and the second number is the one that counts. A retrieval miss in production does not look like a random passage. It looks like a passage that is on topic and silent on the fact you need. Benchmark that gate with random pairings and you measure 100%, then ship something that is 70%.
+
+But here is why it is still useful.
+
+Jev's probabilities are calibrated. When it said 97% sure, it was right 97.6% of the time. Calibration error came out at 0.047 against a 0.039 noise floor for this sample size, so about as honest as 400 items can show.
+
+Calibrated confidence is what lets you gate. Escalate anything scored between 0.10 and 0.90, answer the rest yourself, and you get 95.2% accuracy on 57.5% of traffic. Six decisions in ten never reach the expensive model, and the four that do are exactly the ones it was unsure about.
+
+That reframes the question. Not "is the small model as good as the big one." It is not. It is how much traffic it can own outright, and whether its uncertainty is trustworthy enough to route the rest.
+
+✅ Where I would use this: high volume narrow judgments where a wrong answer is recoverable. Routing, filtering, pre-checks, guardrails.
+
+❌ Where I would not: anything generating text, anything a plain rule already decides, and anything where one wrong call is unacceptable. 95% on the confident slice still means 1 in 20.
+
+Limits. One task, one dataset, one language. No frontier model API access, so this is Jev's confident slice against its uncertain slice, not Jev against GPT or Claude. Latency ran through a third party proxy, so treat 662ms p50 as an upper bound.
+
+Code, the 600 raw responses and the analysis: github.com/ManankumarThakkar/jev-escalation-gate
+
+If you run a small model in front of a large one: how did you pick the escalation threshold, and did you test it against hard negatives or convenient ones?
