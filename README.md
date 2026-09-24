@@ -125,7 +125,7 @@ Let the model answer when it is confident, and escalate when it is not:
 | 0.30 - 0.70 | 83.3% | 88.9% |
 | 0.20 - 0.80 | 75.5% | 92.0% |
 | **0.10 - 0.90** | **57.5%** | **95.2%** |
-| 0.03 - 0.97 | 24.0% | 97.9% |
+| 0.025 - 0.975 | 24.0% | 97.9% |
 
 **Roughly 6 decisions in 10 handled at 95% accuracy, for about two hundredths of a cent each.** The other 4 go to the expensive model, and they are precisely the ones the small model was unsure about.
 
