@@ -75,7 +75,10 @@ def main() -> int:
   "Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-feature-settings:"tnum" 1;
   display:flex;justify-content:center}}
  .stage{{width:1080px;height:1350px;padding:54px 54px 38px;display:flex;flex-direction:column}}
- .kick{{font-size:17px;letter-spacing:.19em;text-transform:uppercase;color:var(--ink3);font-weight:750}}
+ .kick{{font-size:19px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink2);
+   font-weight:750}}
+ .kick b{{color:var(--ink)}}
+ .kick em{{font-style:normal;color:var(--ink3)}}
  h1{{font-size:80px;line-height:.94;font-weight:780;letter-spacing:-.043em;margin:16px 0 0}}
  h1 .b{{color:var(--bad)}}
  .dek{{font-size:23px;color:var(--ink2);line-height:1.36;margin-top:18px;max-width:900px}}
@@ -124,7 +127,7 @@ def main() -> int:
  .cav{{font-size:13px;color:var(--ink3);line-height:1.5;text-align:right;max-width:430px}}
 </style></head><body><div class="stage">
 
- <div class="kick">{d['n_all']} decisions &middot; {d['model']} &middot; SQuAD 2.0</div>
+ <div class="kick">Tested &middot; <b>Jev {d['model'].split('-')[-1]}</b> <em>(TypeSafe AI)</em> as a RAG answerability gate</div>
  <h1>Same gate.<br>100% and <span class="b">{hard_pct:.1f}%</span>.</h1>
  <div class="dek">One model, one prompt, 200 items per slice. The only thing that changed
  was how the negative examples were built.</div>
@@ -185,8 +188,9 @@ def main() -> int:
 
  <footer>
   <div><div class="rlab">Code, raw responses, analysis</div><div class="repo">{REPO_URL}</div></div>
-  <div class="cav">Thresholds chosen by reading this same data, so every share is in-sample.
-  No end-to-end saving measured. SQuAD 2.0 is public; contamination not ruled out.</div>
+  <div class="cav">{d['n_all']} decisions, SQuAD 2.0, 200 per slice, seeded. Thresholds chosen by
+  reading this same data, so every share is in-sample. No end-to-end saving measured.
+  SQuAD 2.0 is public; contamination not ruled out.</div>
  </footer>
 
 </div></body></html>"""
