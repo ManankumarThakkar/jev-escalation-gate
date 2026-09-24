@@ -10,8 +10,6 @@ I built that gate with Jev, TypeSafe AI's System One model. You hand it program 
 
 600 decisions, 13 cents.
 
-Then the test set taught me something.
-
 I built the "no" cases two ways: random unrelated passages, and SQuAD 2.0's own unanswerable questions, which humans wrote specifically to look answerable from that passage.
 
 Random passages: 100% accurate.
@@ -31,6 +29,8 @@ Where I would use this: high volume narrow judgments where a wrong answer is rec
 
 Where I would not: anything generating text, anything a plain rule already decides, and anything where one wrong call is unacceptable. 95% on the confident slice still means 1 in 20.
 
-Limits worth stating. One task, one dataset, one language. I had no frontier model API access, so this is Jev's confident slice against its uncertain slice, not Jev against GPT or Claude. Latency ran through a third party proxy, so treat 662ms p50 as an upper bound, not the model's own number.
+Limits. One task, one dataset, one language. No frontier model API access, so this is Jev's confident slice against its uncertain slice, not Jev against GPT or Claude. Latency ran through a third party proxy, so treat 662ms p50 as an upper bound.
+
+Code, the 600 raw responses and the analysis: github.com/ManankumarThakkar/jev-escalation-gate
 
 If you run a small model in front of a large one: how did you pick the escalation threshold, and did you test it against hard negatives or convenient ones?

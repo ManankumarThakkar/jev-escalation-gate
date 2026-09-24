@@ -14,4 +14,4 @@ One question per request, sequential, identical instruction text fixed before th
 
 The calibration noise floor is resampled, not assumed. A perfectly calibrated model measured on 400 items shows roughly 0.039 expected calibration error from sampling alone, so 0.047 is close to the floor rather than evidence of miscalibration.
 
-Repo with the code, the raw per item responses and the analysis: [link]
+Repo with the code, the raw per item responses and the analysis: https://github.com/ManankumarThakkar/jev-escalation-gate
