@@ -4,8 +4,6 @@
 
 600 real decisions. 13 cents. Every number reproducible from this repo.
 
-![Results](linkedin/figure.png)
-
 ---
 
 ## 🎯 TL;DR
@@ -190,7 +188,7 @@ export JEV_API_KEY=...            # from whichever endpoint you use
 python src/dataset.py --n 200     # rebuild the test set (seeded, deterministic)
 python src/run_experiment.py      # ~7 minutes, ~$0.13
 python src/analyze.py             # recompute every number above
-python src/make_figure.py         # regenerate the chart from those numbers
+python src/make_figure.py         # regenerate the figure from those numbers
 ```
 
 Every raw response is committed in `results/`, so you can re-run the analysis without spending anything.
@@ -204,11 +202,11 @@ src/dataset.py          builds the three groups from SQuAD 2.0, seeded
 src/jev.py              tiny Jev client, standard library only
 src/run_experiment.py   one call per item, records speed/tokens/cost
 src/analyze.py          accuracy, calibration, noise floor, coverage curve
-src/make_figure.py      renders the chart straight from the results
+src/make_figure.py      renders the figure straight from the results, light and dark
 results/raw-*.json      every single response, unedited
 results/report.json     computed metrics
 docs/DECISIONS.md       why this task, why three groups, why no baseline
-linkedin/               the write-up and the figure
+linkedin/               post copy, alternative hooks, first comment, figure (both themes)
 ```
 
 ---
