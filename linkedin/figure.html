@@ -57,7 +57,7 @@
  </div>
 
  <div class="panel">
-  <div class="pt">Where the judgements landed &middot; 400 items, answerable + hard negatives</div>
+  <div class="pt">Where the judgements landed &middot; share of 400 answerable + hard-negative items, not all 600</div>
   <svg viewBox="0 0 990 340" width="100%" height="340" role="img"
        aria-label="Three routing branches by score: reject, escalate, or pass to generation">
    <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
@@ -76,25 +76,28 @@
 
    <rect x="512" y="10" width="478" height="68" rx="11" fill="var(--panel2)" stroke="var(--s3)" stroke-width="2"/>
    <text x="532" y="36" font-size="16" font-weight="700" fill="var(--s3)">score &le; 0.10 &middot; 14.5% &middot; drop the passage, retrieve again</text>
-   <text x="532" y="62" font-size="17" font-weight="650" fill="var(--ink)">the only branch that saves a generation call</text>
+   <text x="532" y="62" font-size="17" font-weight="650" fill="var(--ink)">avoids generation. 1 could have answered.</text>
 
    <rect x="512" y="116" width="478" height="68" rx="11" fill="var(--panel2)" stroke="var(--ink3)" stroke-width="2"/>
    <text x="532" y="142" font-size="16" font-weight="700" fill="var(--ink3)">0.10 &ndash; 0.90 &middot; 42.5% &middot; uncertain</text>
-   <text x="532" y="168" font-size="17" font-weight="650" fill="var(--ink)">escalate the judgement, not the answer</text>
+   <text x="532" y="168" font-size="17" font-weight="650" fill="var(--ink)">escalate the judgement; may also end in rejection</text>
 
    <rect x="512" y="222" width="478" height="68" rx="11" fill="var(--panel2)" stroke="var(--s1)" stroke-width="2"/>
    <text x="532" y="248" font-size="16" font-weight="700" fill="var(--s1)">score &ge; 0.90 &middot; 43.0% &middot; pass to answer generation</text>
-   <text x="532" y="274" font-size="17" font-weight="650" fill="var(--ink)">still costs an LLM call</text>
+   <text x="532" y="274" font-size="17" font-weight="650" fill="var(--ink)">still costs an LLM call. 10 could not answer.</text>
   </svg>
   <div class="warn"><b>133 of 200</b> hard negatives landed in the uncertain band: the gate
-  mostly declines to commit on the class it is worst at. But <b>10</b> were accepted at
-  0.90 or above. Those are the production risk, not the headline accuracy.</div>
+  mostly declines to commit on the class it is worst at. The errors run both ways, unevenly:
+  <b>1</b> answerable passage dropped, <b>10</b> unanswerable ones waved through at
+  0.90 or above. The second kind is what yields a confident answer from a passage that
+  never held the fact.</div>
  </div>
 
  <footer>
   <div><div class="rlab">Code, raw responses, analysis</div><div class="repo">github.com/ManankumarThakkar/jev-escalation-gate</div></div>
-  <div class="cav">Thresholds chosen by reading this same data, so the splits are in-sample.
-  SQuAD 2.0 is public; contamination not ruled out. No frontier-model baseline was run.</div>
+  <div class="cav">Thresholds chosen by reading this same data, so every split is in-sample and
+  says nothing about production reliability. No end-to-end RAG saving was measured. SQuAD 2.0
+  is public; contamination not ruled out. No frontier-model baseline was run.</div>
  </footer>
 
 </div></body></html>

@@ -1,6 +1,8 @@
 Repo, with the code, all 600 raw responses and the analysis:
 https://github.com/ManankumarThakkar/jev-escalation-gate
 
-One thing that did not fit in the post. The 0.10 and 0.90 thresholds were not chosen in advance. I swept the full range over these same 400 items and picked the split by reading the curve, so the routing percentages are an in-sample observation, not a validated production estimate. On fresh traffic I would expect them to move.
+Two details that did not fit the post.
 
-Same caution on calibration. Aggregate calibration error came out near a resampled noise floor, which sounds reassuring, but that aggregate is carried by one large high-confidence bucket that is mostly easy positives. The mid-range buckets were the least reliable, and those are precisely the scores the escalation band is drawn around. Good enough to route on here, not good enough to fine-tune a threshold with.
+The routing percentages are over the 400 answerable and hard-negative items, not all 600. The third slice, questions paired with a passage from a different article, is a contamination control rather than traffic anyone sees, so including it would flatter the split. Over all 600 the same band reads 42.8% rejected instead of 14.5%, which is why the denominator matters.
+
+The 0.10 and 0.90 thresholds were not chosen in advance. I swept the full range over these same items and picked the split by reading the curve, so the shares are in-sample. Calibration has the same caveat from a different direction: aggregate error sat near a resampled noise floor, but that aggregate is carried by one large high-confidence bucket that is mostly easy positives, while the mid-range buckets miss by up to 0.29. Those mid-range scores are exactly what the escalation band is drawn around.

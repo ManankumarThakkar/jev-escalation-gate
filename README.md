@@ -123,8 +123,9 @@ carrying the aggregate. The mid-range buckets are the least reliable, and they
 are exactly where the escalation band sits.
 
 So: **on this evaluation, high-confidence scores were dependable and mid-range
-scores were not.** That is enough to route on. It is not enough to tune a
-threshold with, and it is not a general claim about the model.
+scores were not.** That is a measurement, not a validation. The thresholds were
+chosen by reading this same data, so nothing here establishes that routing on
+these scores would hold up in production.
 
 ### 3️⃣ Which means you can route on it
 
@@ -134,7 +135,7 @@ negatives, n=400), at a band of 0.10 to 0.90:
 
 | Score | Share | What it means | Composition |
 |---|---:|---|---|
-| **at or below 0.10** | **14.5%** | drop the passage, retrieve again. **The only branch that avoids a generation call.** | 57 hard negatives, 1 answerable (wrongly dropped) |
+| **at or below 0.10** | **14.5%** | drop the passage, retrieve again. Avoids the generation call outright. | 57 hard negatives, **1 answerable wrongly dropped** |
 | 0.10 to 0.90 | 42.5% | escalate the *judgement* to a stronger evaluator | 133 hard negatives, 37 answerable |
 | at or above 0.90 | 43.0% | pass to answer generation. **Still costs an LLM call.** | 162 answerable, 10 hard negatives |
 
@@ -149,8 +150,14 @@ risk: unanswerable passages waved through with high confidence, which is how you
 get a fluent answer built on a passage that never held the fact. 5% of the hard
 negatives, and no aggregate accuracy number will show it to you.
 
-A note on what this does *not* say: it measures answerability classification, not
-complete RAG requests. Nothing here establishes an end-to-end cost saving.
+Rejecting a passage avoids the generation call outright. An escalated judgement
+that comes back negative would avoid it too, but that second path was not
+measured here, so **no end-to-end RAG saving is established**. This measures
+answerability classification, not complete RAG requests.
+
+All three shares are over the 400 answerable and hard-negative items. Over all
+600, including the easy-negative control, the same band reads 42.8% rejected
+rather than 14.5%, which is why the denominator has to be stated.
 
 ### 💵 Speed and cost, measured
 

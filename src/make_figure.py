@@ -42,6 +42,7 @@ def data() -> dict:
         "acc_pct": len(acc_band) / len(real) * 100,
         "hard_conf_accept": len([r for r in acc_band if r["slice"] == "hard_negative"]),
         "hard_escalated": len([r for r in esc if r["slice"] == "hard_negative"]),
+        "false_reject": len([r for r in rej if r["answerable"]]),
         "n_hard": len(hard),
         "model": raw["models_seen"][0], "cost": raw["total_cost_usd"], "n": len(rows),
     }
@@ -116,7 +117,7 @@ def main() -> int:
  </div>
 
  <div class="panel">
-  <div class="pt">Where the judgements landed &middot; {d['n_real']} items, answerable + hard negatives</div>
+  <div class="pt">Where the judgements landed &middot; share of {d['n_real']} answerable + hard-negative items, not all {d['n']}</div>
   <svg viewBox="0 0 990 340" width="100%" height="340" role="img"
        aria-label="Three routing branches by score: reject, escalate, or pass to generation">
    <defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7"
@@ -135,25 +136,28 @@ def main() -> int:
 
    <rect x="512" y="10" width="478" height="68" rx="11" fill="var(--panel2)" stroke="var(--s3)" stroke-width="2"/>
    <text x="532" y="36" font-size="16" font-weight="700" fill="var(--s3)">score &le; {LO:.2f} &middot; {d['rej_pct']:.1f}% &middot; drop the passage, retrieve again</text>
-   <text x="532" y="62" font-size="17" font-weight="650" fill="var(--ink)">the only branch that saves a generation call</text>
+   <text x="532" y="62" font-size="17" font-weight="650" fill="var(--ink)">avoids generation. {d['false_reject']} could have answered.</text>
 
    <rect x="512" y="116" width="478" height="68" rx="11" fill="var(--panel2)" stroke="var(--ink3)" stroke-width="2"/>
    <text x="532" y="142" font-size="16" font-weight="700" fill="var(--ink3)">{LO:.2f} &ndash; {HI:.2f} &middot; {d['esc_pct']:.1f}% &middot; uncertain</text>
-   <text x="532" y="168" font-size="17" font-weight="650" fill="var(--ink)">escalate the judgement, not the answer</text>
+   <text x="532" y="168" font-size="17" font-weight="650" fill="var(--ink)">escalate the judgement; may also end in rejection</text>
 
    <rect x="512" y="222" width="478" height="68" rx="11" fill="var(--panel2)" stroke="var(--s1)" stroke-width="2"/>
    <text x="532" y="248" font-size="16" font-weight="700" fill="var(--s1)">score &ge; {HI:.2f} &middot; {d['acc_pct']:.1f}% &middot; pass to answer generation</text>
-   <text x="532" y="274" font-size="17" font-weight="650" fill="var(--ink)">still costs an LLM call</text>
+   <text x="532" y="274" font-size="17" font-weight="650" fill="var(--ink)">still costs an LLM call. {d['hard_conf_accept']} could not answer.</text>
   </svg>
   <div class="warn"><b>{d['hard_escalated']} of {d['n_hard']}</b> hard negatives landed in the uncertain band: the gate
-  mostly declines to commit on the class it is worst at. But <b>{d['hard_conf_accept']}</b> were accepted at
-  {HI:.2f} or above. Those are the production risk, not the headline accuracy.</div>
+  mostly declines to commit on the class it is worst at. The errors run both ways, unevenly:
+  <b>{d['false_reject']}</b> answerable passage dropped, <b>{d['hard_conf_accept']}</b> unanswerable ones waved through at
+  {HI:.2f} or above. The second kind is what yields a confident answer from a passage that
+  never held the fact.</div>
  </div>
 
  <footer>
   <div><div class="rlab">Code, raw responses, analysis</div><div class="repo">{REPO_URL}</div></div>
-  <div class="cav">Thresholds chosen by reading this same data, so the splits are in-sample.
-  SQuAD 2.0 is public; contamination not ruled out. No frontier-model baseline was run.</div>
+  <div class="cav">Thresholds chosen by reading this same data, so every split is in-sample and
+  says nothing about production reliability. No end-to-end RAG saving was measured. SQuAD 2.0
+  is public; contamination not ruled out. No frontier-model baseline was run.</div>
  </footer>
 
 </div></body></html>"""

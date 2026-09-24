@@ -13,19 +13,21 @@ The second is what a retrieval miss really looks like. Nothing hands you a passa
 
 The 100% is not the good news it looks like either. A classifier that always says "unanswerable" also scores 100% there, and 0% on real answers.
 
-More useful than the accuracy was where the uncertainty landed.
+More useful than the accuracy was where the uncertainty landed. Across the 400 answerable and hard-negative items, at a band of 0.10 to 0.90:
 
-Of the 200 hard negatives, 133 scored in the middle of the range rather than at either end. The gate mostly declined to commit on the class it is worst at. It confidently rejected 57. It confidently accepted 10, and those 10 are the real production risk.
+At or below 0.10, drop the passage and retrieve again: 14.5%.
+Between 0.10 and 0.90, escalate the judgement: 42.5%.
+At or above 0.90, pass through to generation: 43%.
 
-Which makes the routing less dramatic than it first looks:
+Two things in that split are worth more than the accuracy figure.
 
-At or below 0.10, drop the passage and retrieve again. 14.5% of judgements, and this is the only branch that saves a generation call.
+133 of the 200 hard negatives fell in the uncertain band. The gate mostly declined to commit on the class it is worst at, which is the behaviour you want from a router.
 
-Between 0.10 and 0.90, escalate the judgement. 42.5%.
+The errors run both ways, unevenly. One answerable passage was dropped at the low end. Ten unanswerable ones were waved through at 0.90 or above, and that is the direction that produces a confident answer built on a passage that never held the fact.
 
-At or above 0.90, pass it through to generation. That is still an LLM call. The gate decides whether to generate, not what to generate.
+On cost, carefully: rejecting a passage avoids the generation call outright. An escalated judgement that comes back negative would too, but I did not measure that second path, so there is no end-to-end RAG saving here. The gate decides whether to generate, not what to generate.
 
-Limits. 600 decisions, one English dataset. The thresholds were picked by reading this same data, so those splits are in-sample rather than validated. Aggregate calibration error sat near a resampled noise floor, but the mid-range buckets were the least reliable, and that is exactly where the escalation band sits. SQuAD 2.0 is public, so contamination is possible and I have not ruled it out.
+Limits. 600 decisions, one English dataset. I chose 0.10 and 0.90 by reading this same data, so every split above is in-sample and says nothing about production reliability. High-confidence scores were dependable on this evaluation and mid-range ones were not, which is measured, not validated. SQuAD 2.0 is public, so contamination is possible and I have not ruled it out.
 
 github.com/ManankumarThakkar/jev-escalation-gate
 
