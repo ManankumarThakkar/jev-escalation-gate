@@ -1,8 +1,12 @@
-Repo, with the code, all 600 raw responses and the analysis:
+The detail that surprised me most 👇
+
+I expected reading the failures to confirm the headline. It did the opposite.
+
+Of the 10 the gate was most confident about, at least 6 have the answer sitting in the passage. "How many stories does the Bank of America tower have?" against a passage reading "includes 42 floors." The model was right; SQuAD's label was wrong.
+
+Confidence and label quality moved together. Above 0.90 the errors were mostly the benchmark's. Between 0.50 and 0.90 they were real, and they were almost all one thing: a question perturbed against the passage. Swapped names, an inverted claim, a changed number.
+
+Two caveats I would want if I were reading this. The routing percentages are over the 400 answerable and hard-negative items, not all 600; including the easy-negative control pushes the rejection rate from 14.5% to 42.8%, but 199 of those 257 rejections are the control itself. And the 0.10 / 0.90 thresholds were not set in advance, I picked them by reading the curve on this same data.
+
+Case-by-case notes on all 61, and the raw responses:
 https://github.com/ManankumarThakkar/jev-escalation-gate
-
-Two details that did not fit the post.
-
-The routing percentages are over the 400 answerable and hard-negative items, not all 600. The third slice, questions paired with a passage from a different article, is a contamination control rather than traffic anyone sees, so including it would flatter the split. Over all 600 the same band reads 42.8% rejected instead of 14.5%, which is why the denominator matters.
-
-The 0.10 and 0.90 thresholds were not chosen in advance. I swept the full range over these same items and picked the split by reading the curve, so the shares are in-sample. Calibration has the same caveat from a different direction: aggregate error sat near a resampled noise floor, but that aggregate is carried by one large high-confidence bucket that is mostly easy positives, while the mid-range buckets miss by up to 0.29. Those mid-range scores are exactly what the escalation band is drawn around.

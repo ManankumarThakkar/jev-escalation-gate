@@ -1,34 +1,42 @@
 The same answerability gate scored 100% and 69.5% on the same afternoon.
 
-Same model, same prompt, 200 items per slice. The only thing that changed was how I built the wrong answers.
+Same model. Same prompt. The only thing that changed was how I built the negative examples.
 
-I was testing a cheap pre-check for RAG: before spending a generation call, ask whether the retrieved passage actually contains what the question needs. The judge was Jev, TypeSafe AI's System One model, which returns a typed score instead of prose.
+I was testing Jev, TypeSafe AI's System One model, as a cheap pre-check for RAG: can this retrieved passage actually answer the question?
 
-Two kinds of wrong answer:
+📊 Two kinds of negative:
 
-Random unrelated passage: 200/200 correct.
-On topic but missing the fact: 139/200.
+🟢 Random unrelated passage: 100% (200/200)
 
-The second is what a retrieval miss really looks like. Nothing hands you a passage about jellyfish when you asked about Warsaw. It hands you the right article, missing the one sentence you needed. On those, 61 of 200 were called answerable when they were not.
+🟠 On topic, missing the fact: 69.5% (139/200)
 
-The 100% is not the good news it looks like either. A classifier that always says "unanswerable" also scores 100% there, and 0% on real answers.
+A 30.5-point gap, and the second number is the one that counts. A retrieval miss doesn't hand you something obviously irrelevant. It hands you the right article, missing the one sentence you needed.
 
-More useful than the accuracy was where the uncertainty landed. Across the 400 answerable and hard-negative items, at a band of 0.10 to 0.90:
+That 100% is worth less than it looks, too. A classifier that always says "unanswerable" scores 100% there and 0% on real answers.
 
-At or below 0.10, drop the passage and retrieve again: 14.5%.
-Between 0.10 and 0.90, escalate the judgement: 42.5%.
-At or above 0.90, pass through to generation: 43%.
+🔍 Then I read the 61 cases it got wrong. That changed the finding.
 
-Two things in that split are worth more than the accuracy figure.
+Of the 10 it was most confident about, at least 6 were not wrong at all.
 
-133 of the 200 hard negatives fell in the uncertain band. The gate mostly declined to commit on the class it is worst at, which is the behaviour you want from a router.
+"How many stories does the Bank of America tower have?" The passage says the tower "includes 42 floors." SQuAD labels that unanswerable. It isn't.
 
-The errors run both ways, unevenly. One answerable passage was dropped at the low end. Ten unanswerable ones were waved through at 0.90 or above, and that is the direction that produces a confident answer built on a passage that never held the fact.
+So 69.5% is a floor, not an estimate. Some of the gap is the benchmark's error, not the model's.
 
-On cost, carefully: rejecting a passage avoids the generation call outright. An escalated judgement that comes back negative would too, but I did not measure that second path, so there is no end-to-end RAG saving here. The gate decides whether to generate, not what to generate.
+⚠️ But the real mistakes had a shape, and it's a useful one.
 
-Limits. 600 decisions, one English dataset. I chose 0.10 and 0.90 by reading this same data, so every split above is in-sample and says nothing about production reliability. High-confidence scores were dependable on this evaluation and mid-range ones were not, which is measured, not validated. SQuAD 2.0 is public, so contamination is possible and I have not ruled it out.
+SQuAD builds unanswerable questions by perturbing answerable ones, and that is exactly what the gate missed:
 
-github.com/ManankumarThakkar/jev-escalation-gate
+• Name swap: "Carl von Hampson and William Linde" when the passage says Linde and Hampson.
+• Negation: "What IS fully understood about γδ T cells?" when the passage says not fully understood.
+• False premise: asking what was gained from a win that the passage describes as a defeat.
 
-If you put a small model in front of a large one, how do you decide its confidence is trustworthy enough to act on?
+It handles topic mismatch almost perfectly. It misses a question that has been subtly altered against the passage.
+
+Limits: 600 decisions, one public English dataset, thresholds picked on this same data, and I re-read those 61 myself knowing what the model had said. That is a re-reading, not an independent re-labelling.
+
+My takeaway: your benchmark can be wrong in both directions. Convenient negatives flatter the model. Noisy labels punish it. I only found both by reading the failures one at a time.
+
+🔗 Code, all 600 raw responses, and the case-by-case notes:
+https://github.com/ManankumarThakkar/jev-escalation-gate
+
+If you gate a large model with a small one, how do you check that your negative examples look like your real failures?

@@ -145,10 +145,15 @@ Two things worth pulling out of that table.
 200 hard negatives land in the uncertain band. That is the behaviour you want
 from a router, and it is more useful than any accuracy figure.
 
-**10 hard negatives were accepted at 0.90 or above.** Those are the production
-risk: unanswerable passages waved through with high confidence, which is how you
-get a fluent answer built on a passage that never held the fact. 5% of the hard
-negatives, and no aggregate accuracy number will show it to you.
+**10 hard negatives were accepted at 0.90 or above** — and reading them is what
+corrected this write-up. At least 6 of those 10 have the answer plainly in the
+passage; SQuAD labels them unanswerable and they are not. The model was right
+and the benchmark was wrong.
+
+So **69.5% is a floor, not an estimate**, and the earlier framing of those 10 as
+"the production risk" was the same mistake this project is about. The genuine
+errors cluster elsewhere, in a nameable shape. Case by case in
+[docs/ADJUDICATION.md](docs/ADJUDICATION.md).
 
 Rejecting a passage avoids the generation call outright. An escalated judgement
 that comes back negative would avoid it too, but that second path was not
@@ -174,7 +179,7 @@ rather than 14.5%, which is why the denominator has to be stated.
 
 Useful even if you never touch Jev:
 
-**🎯 Test with hard cases or your number is fiction.** Same model, same day, 100% vs 69.5%. The only variable was test construction. This applies to any filter, classifier, or guardrail you have ever shipped.
+**🎯 Your benchmark can be wrong in both directions.** Convenient negatives flatter the model: 100% vs 69.5% on the same day, with test construction the only variable. Noisy labels punish it: at least 6 of the 10 most confident "failures" were not failures. Both were only visible by reading the cases one at a time.
 
 **⚖️ A small model does not have to beat the big one to earn its place.** It has to be honest about when it is unsure. What made this useful was not its accuracy but where its uncertainty landed: mostly on the cases it was worst at.
 
@@ -237,6 +242,7 @@ results/raw-*.json      every single response, unedited
 results/report.json     computed metrics
 docs/DECISIONS.md       why this task, why three groups, why no baseline
 docs/VERIFICATION.md    every published figure recomputed from the raw responses
+docs/ADJUDICATION.md    all 61 false accepts read case by case, and what that changed
 linkedin/               post copy, first comment, figure
 ```
 

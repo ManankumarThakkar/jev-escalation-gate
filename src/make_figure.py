@@ -109,6 +109,8 @@ def main() -> int:
  .err.ok .en{{color:var(--blue)}}
  .et{{font-size:18px;color:var(--ink2);line-height:1.34;margin-top:9px}}
  .et b{{color:var(--ink);font-weight:650}}
+ .et i{{color:var(--ink2);font-style:italic}}
+ .en{{white-space:nowrap}}
 
  .route{{margin-top:28px}}
  .rt{{font-size:16px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink3);
@@ -162,15 +164,17 @@ def main() -> int:
  </div>
 
  <div class="errs">
-  <div class="err">
-   <div class="en">{d['false_accept']}</div>
-   <div class="et">unanswerable passages accepted at <b>{HI:.2f} or above</b>. Each one risks
-   an answer generated from a passage that cannot support it.</div>
-  </div>
   <div class="err ok">
-   <div class="en">{d['false_reject']}</div>
-   <div class="et">answerable passage <b>wrongly dropped</b>. The errors run both ways,
-   but not evenly.</div>
+   <div class="en">6 of 10</div>
+   <div class="et">of the most confident &ldquo;errors&rdquo; were <b>not errors</b>. The passage
+   did contain the answer. <i>How many stories does the tower have?</i> &mdash; &ldquo;includes
+   <b>42 floors</b>.&rdquo; So 69.5% is a floor, not an estimate.</div>
+  </div>
+  <div class="err">
+   <div class="en">The rest</div>
+   <div class="et">were real, and nearly all one shape: a question <b>perturbed</b> against the
+   passage. Swapped names, an inverted claim, a changed number. Topic mismatch it catches;
+   this it does not.</div>
   </div>
  </div>
 
@@ -188,9 +192,9 @@ def main() -> int:
 
  <footer>
   <div><div class="rlab">Code, raw responses, analysis</div><div class="repo">{REPO_URL}</div></div>
-  <div class="cav">{d['n_all']} decisions, SQuAD 2.0, 200 per slice, seeded. Thresholds chosen by
-  reading this same data, so every share is in-sample. No end-to-end saving measured.
-  SQuAD 2.0 is public; contamination not ruled out.</div>
+  <div class="cav">{d['n_all']} decisions, SQuAD 2.0, 200 per slice, seeded. All 61 false accepts
+  re-read by one reader who knew the scores: a re-reading, not an independent re-labelling.
+  Thresholds chosen on this same data. No end-to-end saving measured.</div>
  </footer>
 
 </div></body></html>"""
