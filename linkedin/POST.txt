@@ -24,7 +24,7 @@ So 69.5% is a floor, not an estimate. Some of the gap is the benchmark's error, 
 
 ⚠️ But the real mistakes had a shape, and it's a useful one.
 
-SQuAD builds unanswerable questions by perturbing answerable ones, and that is exactly what the gate missed:
+Most of the remaining failures were one thing: a question subtly altered against the passage. SQuAD builds its unanswerable questions by perturbing answerable ones, and that is what the gate missed:
 
 • Name swap: "Carl von Hampson and William Linde" when the passage says Linde and Hampson.
 • Negation: "What IS fully understood about γδ T cells?" when the passage says not fully understood.
