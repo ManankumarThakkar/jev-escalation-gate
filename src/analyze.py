@@ -104,6 +104,52 @@ def coverage_curve(rows: list[dict], steps: int = 21) -> list[dict]:
     return out
 
 
+def routing(rows: list[dict], lo: float = 0.10, hi: float = 0.90) -> dict:
+    """The three actions an answerability gate can actually take.
+
+    Separated deliberately, because "retained" conflates two different
+    outcomes. A confident *unanswerable* lets you drop the passage before
+    paying for generation. A confident *answerable* does not: the gate
+    classifies, it does not generate, so that branch still costs a generation
+    call. Reporting them as one number overstates the saving.
+    """
+    def bucket(pred):
+        chunk = [r for r in rows if pred(r["p_answerable"])]
+        by_slice: dict[str, dict[str, int]] = {}
+        for r in chunk:
+            entry = by_slice.setdefault(r["slice"], {"n": 0, "wrong": 0})
+            entry["n"] += 1
+            if (r["p_answerable"] >= 0.5) != r["answerable"]:
+                entry["wrong"] += 1
+        return {
+            "n": len(chunk),
+            "share": round(len(chunk) / len(rows), 4) if rows else None,
+            "by_slice": by_slice,
+        }
+
+    return {
+        "band": [lo, hi],
+        "population": "answerable + hard_negative",
+        "n": len(rows),
+        "reject_confidently_unanswerable": {
+            **bucket(lambda p: p <= lo),
+            "action": "drop the passage or retrieve again; generation call avoided",
+        },
+        "escalate_uncertain": {
+            **bucket(lambda p: lo < p < hi),
+            "action": "escalate the answerability judgement to a stronger evaluator",
+        },
+        "accept_confidently_answerable": {
+            **bucket(lambda p: p >= hi),
+            "action": "pass to answer generation; this still costs a generation call",
+        },
+        "note": (
+            "Thresholds were chosen by reading the coverage curve over these same "
+            "items, so every share here is in-sample, not a validated estimate."
+        ),
+    }
+
+
 def main() -> int:
     raw_path = Path(sys.argv[1]) if len(sys.argv) > 1 else latest_raw()
     raw = json.loads(raw_path.read_text())
@@ -144,6 +190,7 @@ def main() -> int:
             "reliability_bins": table,
         },
         "coverage_curve_realistic": coverage_curve(realistic),
+        "routing": routing(realistic),
         "latency_ms": {
             "p50": round(statistics.median(lat), 1),
             "p95": round(lat[int(len(lat) * 0.95)], 1),
@@ -184,6 +231,15 @@ def main() -> int:
             lo, hi = row["escalate_if_between"]
             print(f"  {f'{lo:.2f}-{hi:.2f}':>22} {row['coverage']:>9.3f} "
                   f"{row['accuracy_on_covered']:>15.3f}")
+
+    rt = report["routing"]
+    print(f"\nrouting at band {rt['band']}, {rt['population']}, n={rt['n']}")
+    for key in ("reject_confidently_unanswerable", "escalate_uncertain",
+                "accept_confidently_answerable"):
+        b = rt[key]
+        print(f"  {key:34} {b['n']:>4}  {b['share']*100:5.1f}%  {b['action']}")
+        for sl, v in sorted(b["by_slice"].items()):
+            print(f"      {sl:16} n={v['n']:>3} wrong={v['wrong']:>3}")
 
     print(f"\nlatency p50/p95/p99: {report['latency_ms']['p50']:.0f} / "
           f"{report['latency_ms']['p95']:.0f} / {report['latency_ms']['p99']:.0f} ms (via proxy)")

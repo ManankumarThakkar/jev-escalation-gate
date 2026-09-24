@@ -12,7 +12,7 @@ Three things came out of this, and the first one is the reason to read on:
 
 1. **The same gate scored 100% and 69.5%** on the same model, same prompt, same afternoon. The only difference was how I built the wrong answers in the test set. Build your test the convenient way and you will ship something far worse than you measured.
 2. **The confidence number is honest.** When the model said it was 97% sure, it was right 97.6% of the time.
-3. **Because of #2, you can route on it.** Hand the model the decisions it is confident about and escalate the rest, and it answers **57.5% of traffic at 95.2% accuracy**. Six decisions in ten never reach the expensive model.
+3. **Because of #2, you can route on it** - but less dramatically than it first looks. A confident "this passage cannot answer it" lets you drop the passage before paying for generation: **14.5% of judgements**. A confident "it can" still needs the generation call. The gate decides *whether* to generate, not *what* to generate.
 
 ---
 
@@ -105,29 +105,52 @@ Over the realistic mix (answerable + hard negatives):
 - Raw accuracy: **82.5%**
 - Calibration error: **0.047**, against a **0.039** noise floor for this sample size
 
-That second number matters. Even a *perfectly* calibrated model measured on 400 items would score about 0.039 just from random chance. So 0.047 is about as honest as this sample can demonstrate. The claim holds.
+That second number matters. Even a *perfectly* calibrated model measured on 400
+items would score about 0.039 from sampling noise alone, so 0.047 is close to
+the floor rather than evidence of miscalibration.
 
-And where it counts most, it is excellent:
+But the aggregate flatters it, and this is worth being precise about:
 
-| When it said... | it was right... | across |
-|---|---|---|
-| 97% sure | **97.6%** of the time | 164 items |
+| Confidence bucket | n | Stated | Observed | Gap |
+|---|---:|---:|---:|---:|
+| 0.95 - 1.00 | 164 | 0.974 | 0.976 | **+0.002** |
+| 0.70 - 0.75 | 14 | 0.719 | 0.429 | **-0.290** |
+| 0.65 - 0.70 | 13 | 0.672 | 0.462 | -0.211 |
+| 0.55 - 0.60 | 19 | 0.572 | 0.368 | -0.203 |
 
-### 3️⃣ Which means you can build the gate
+The top bucket holds 164 of 400 items and is 86% easy positives, and it is
+carrying the aggregate. The mid-range buckets are the least reliable, and they
+are exactly where the escalation band sits.
 
-Let the model answer when it is confident, and escalate when it is not:
+So: **on this evaluation, high-confidence scores were dependable and mid-range
+scores were not.** That is enough to route on. It is not enough to tune a
+threshold with, and it is not a general claim about the model.
 
-| Escalate when the score is between | Decisions it keeps | Accuracy on those |
-|---|---:|---:|
-| nothing (it answers everything) | 100% | 82.5% |
-| 0.30 - 0.70 | 83.3% | 88.9% |
-| 0.20 - 0.80 | 75.5% | 92.0% |
-| **0.10 - 0.90** | **57.5%** | **95.2%** |
-| 0.025 - 0.975 | 24.0% | 97.9% |
+### 3️⃣ Which means you can route on it
 
-**Roughly 6 decisions in 10 handled at 95% accuracy, for about two hundredths of a cent each.** The other 4 go to the expensive model, and they are precisely the ones the small model was unsure about.
+An answerability gate has three possible actions, and lumping them together is
+how the saving gets overstated. Over the realistic mix (answerable + hard
+negatives, n=400), at a band of 0.10 to 0.90:
 
-This only works because the confidence is honest. An unreliable confidence score would give you a dial that does nothing.
+| Score | Share | What it means | Composition |
+|---|---:|---|---|
+| **at or below 0.10** | **14.5%** | drop the passage, retrieve again. **The only branch that avoids a generation call.** | 57 hard negatives, 1 answerable (wrongly dropped) |
+| 0.10 to 0.90 | 42.5% | escalate the *judgement* to a stronger evaluator | 133 hard negatives, 37 answerable |
+| at or above 0.90 | 43.0% | pass to answer generation. **Still costs an LLM call.** | 162 answerable, 10 hard negatives |
+
+Two things worth pulling out of that table.
+
+**The gate mostly declines to commit on the class it is worst at.** 133 of the
+200 hard negatives land in the uncertain band. That is the behaviour you want
+from a router, and it is more useful than any accuracy figure.
+
+**10 hard negatives were accepted at 0.90 or above.** Those are the production
+risk: unanswerable passages waved through with high confidence, which is how you
+get a fluent answer built on a passage that never held the fact. 5% of the hard
+negatives, and no aggregate accuracy number will show it to you.
+
+A note on what this does *not* say: it measures answerability classification, not
+complete RAG requests. Nothing here establishes an end-to-end cost saving.
 
 ### 💵 Speed and cost, measured
 
@@ -146,7 +169,7 @@ Useful even if you never touch Jev:
 
 **🎯 Test with hard cases or your number is fiction.** Same model, same day, 100% vs 69.5%. The only variable was test construction. This applies to any filter, classifier, or guardrail you have ever shipped.
 
-**⚖️ A small model does not have to beat the big one to earn its place.** It has to be honest about when it is unsure. "82.5% accurate" sounds mediocre. "95.2% on 57.5% of traffic, rest escalated" is an architecture.
+**⚖️ A small model does not have to beat the big one to earn its place.** It has to be honest about when it is unsure. What made this useful was not its accuracy but where its uncertainty landed: mostly on the cases it was worst at.
 
 **🔑 Calibration is the feature, not accuracy.** Everything useful here flows from the probability meaning what it says. Without that, there is no dial to turn and no gate to build.
 
@@ -202,11 +225,12 @@ src/dataset.py          builds the three groups from SQuAD 2.0, seeded
 src/jev.py              tiny Jev client, standard library only
 src/run_experiment.py   one call per item, records speed/tokens/cost
 src/analyze.py          accuracy, calibration, noise floor, coverage curve
-src/make_figure.py      renders the figure straight from the results, light and dark
+src/make_figure.py      renders the figure straight from the raw responses
 results/raw-*.json      every single response, unedited
 results/report.json     computed metrics
 docs/DECISIONS.md       why this task, why three groups, why no baseline
-linkedin/               post copy, alternative hooks, first comment, figure (both themes)
+docs/VERIFICATION.md    every published figure recomputed from the raw responses
+linkedin/               post copy, first comment, figure
 ```
 
 ---

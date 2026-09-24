@@ -317,6 +317,60 @@
       "accuracy_on_covered": null
     }
   ],
+  "routing": {
+    "band": [
+      0.1,
+      0.9
+    ],
+    "population": "answerable + hard_negative",
+    "n": 400,
+    "reject_confidently_unanswerable": {
+      "n": 58,
+      "share": 0.145,
+      "by_slice": {
+        "hard_negative": {
+          "n": 57,
+          "wrong": 0
+        },
+        "answerable": {
+          "n": 1,
+          "wrong": 1
+        }
+      },
+      "action": "drop the passage or retrieve again; generation call avoided"
+    },
+    "escalate_uncertain": {
+      "n": 170,
+      "share": 0.425,
+      "by_slice": {
+        "hard_negative": {
+          "n": 133,
+          "wrong": 51
+        },
+        "answerable": {
+          "n": 37,
+          "wrong": 8
+        }
+      },
+      "action": "escalate the answerability judgement to a stronger evaluator"
+    },
+    "accept_confidently_answerable": {
+      "n": 172,
+      "share": 0.43,
+      "by_slice": {
+        "hard_negative": {
+          "n": 10,
+          "wrong": 10
+        },
+        "answerable": {
+          "n": 162,
+          "wrong": 0
+        }
+      },
+      "action": "pass to answer generation; this still costs a generation call"
+    },
+    "note": "Thresholds were chosen by reading the coverage curve over these same items, so every share here is in-sample, not a validated estimate."
+  },
   "latency_ms": {
     "p50": 662.1,
     "p95": 823.3,
