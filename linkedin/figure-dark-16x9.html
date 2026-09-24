@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" data-theme="dark"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escalation Gate</title>
+<style>
+  :root { --bg:#14140f; --panel:#1f1f1a; --panel2:#262620; --ink:#ffffff;
+       --ink2:#c9c8bc; --ink3:#8f8e84; --line:#37372f;
+       --s1:#3987e5; --s2:#d95926; --s3:#199e70; --track:#2c2c25; }
+  *{box-sizing:border-box} html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--ink);
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-feature-settings:"tnum" 1;display:flex;justify-content:center}
+  .stage{width:1920px;height:1080px;background:var(--bg);padding:52px 60px 40px;
+    display:flex;flex-direction:column;gap:22px;transform-origin:top left}
+
+  .kicker{font-size:19px;letter-spacing:.16em;text-transform:uppercase;
+    color:var(--ink3);font-weight:700}
+  h1{font-size:70px;line-height:1.0;font-weight:750;letter-spacing:-.035em;margin:10px 0 0}
+  h1 .hl{color:var(--s2)}
+  .dek{font-size:23px;color:var(--ink2);line-height:1.4;margin-top:12px;font-weight:450;max-width:1200px}
+
+  .cols{display:grid;grid-template-columns:760px 1fr;gap:22px;flex:1;min-height:0}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    padding:26px 28px;box-shadow:none;display:flex;flex-direction:column}
+  .ptitle{font-size:15px;letter-spacing:.13em;text-transform:uppercase;
+    color:var(--ink3);font-weight:750;margin-bottom:12px}
+
+  .row{display:grid;grid-template-columns:250px 1fr 86px;gap:13px;align-items:center;margin-top:12px}
+  .rl{font-size:18px;color:var(--ink2);line-height:1.2}
+  .rt{height:32px;background:var(--track);border-radius:4px;overflow:hidden}
+  .rf{height:100%;border-radius:4px}
+  .s1{background:var(--s1)} .s2{background:var(--s2)} .s3{background:var(--s3)}
+  .rv{font-size:26px;font-weight:750;text-align:right;letter-spacing:-.02em}
+  .gapnote{font-size:18px;color:var(--ink2);margin-top:16px;line-height:1.42}
+  .gapnote b{color:var(--ink)}
+
+  .stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:13px;margin-top:auto;padding-top:18px}
+  .stat{background:var(--panel2);border-radius:13px;padding:16px 18px}
+  .sv{font-size:36px;font-weight:750;letter-spacing:-.03em;line-height:1}
+  .sl{font-size:15px;color:var(--ink2);margin-top:6px;line-height:1.28}
+
+  footer{display:flex;justify-content:space-between;align-items:flex-end;gap:24px;
+    padding-top:16px;border-top:1px solid var(--line)}
+  .repo{font-size:24px;font-weight:750;color:var(--ink);letter-spacing:-.015em;white-space:nowrap}
+  .repolab{font-size:15px;color:var(--ink3);letter-spacing:.1em;
+    text-transform:uppercase;font-weight:700;margin-bottom:5px}
+  .caveat{font-size:14px;color:var(--ink3);line-height:1.45;text-align:right;max-width:700px}
+</style></head><body>
+<div class="stage" id="stage">
+
+  <div>
+    <div class="kicker">600 measured decisions &middot; jev-1.13.0 &middot; $0.127</div>
+    <h1>The same gate scored 100% and <span class="hl">69.5%</span>.</h1>
+    <div class="dek">One model, one prompt, one dataset. The only thing that changed was how the
+    wrong answers in the test set were built.</div>
+  </div>
+
+  <div class="cols">
+    <div class="panel">
+      <div class="ptitle">&ldquo;Can this passage answer this question?&rdquo;</div>
+        <div class="row">
+          <div class="rl">Random unrelated passage</div>
+          <div class="rt"><div class="rf s3" style="width:100.0%"></div></div>
+          <div class="rv">100.0%</div>
+        </div>
+        <div class="row">
+          <div class="rl">Passage does answer it</div>
+          <div class="rt"><div class="rf s1" style="width:95.5%"></div></div>
+          <div class="rv">95.5%</div>
+        </div>
+        <div class="row">
+          <div class="rl">On topic, silent on the fact</div>
+          <div class="rt"><div class="rf s2" style="width:69.5%"></div></div>
+          <div class="rv">69.5%</div>
+        </div>
+      <div class="gapnote">A <b>30.5 point gap</b>. Random passages are trivial to
+      reject. Passages that are on topic but silent on the fact, which is what a retrieval
+      miss really looks like, get waved through about <b>three times in ten</b>.</div>
+      <div class="stats">
+        <div class="stat">
+          <div class="sv" style="color:var(--s3)">57.5%</div>
+          <div class="sl">never reach the expensive model</div>
+        </div>
+        <div class="stat">
+          <div class="sv">95.2%</div>
+          <div class="sl">accurate on the ones it keeps</div>
+        </div>
+        <div class="stat">
+          <div class="sv" style="color:var(--s2)">42.5%</div>
+          <div class="sl">escalated, the genuinely hard ones</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="ptitle">So don't let it answer everything. Let it answer what it is sure about.</div>
+      <svg viewBox="0 0 1000 600" width="100%" height="100%" preserveAspectRatio="xMidYMid meet"
+           role="img" aria-label="Question and passage enter the gate; confident cases are answered directly, uncertain cases escalate to a large model">
+        <defs>
+          <marker id="aw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0,0 L10,5 L0,10 z" fill="var(--ink3)"/>
+          </marker>
+        </defs>
+
+        <rect x="0" y="262" width="212" height="78" rx="12" fill="var(--panel2)"/>
+        <text x="106" y="294" text-anchor="middle" font-size="20" font-weight="650" fill="var(--ink)">Question +</text>
+        <text x="106" y="320" text-anchor="middle" font-size="20" font-weight="650" fill="var(--ink)">retrieved passage</text>
+
+        <line x1="220" y1="301" x2="272" y2="301" stroke="var(--ink3)" stroke-width="2.5" marker-end="url(#aw)"/>
+
+        <rect x="280" y="249" width="208" height="104" rx="12" fill="var(--s1)"/>
+        <text x="384" y="287" text-anchor="middle" font-size="26" font-weight="750" fill="#fff">Jev gate</text>
+        <text x="384" y="315" text-anchor="middle" font-size="17" fill="#fff" opacity=".93">662 ms &middot; $0.000212</text>
+        <text x="384" y="337" text-anchor="middle" font-size="16" fill="#fff" opacity=".8">returns 0.00 to 1.00</text>
+
+        <path d="M494,278 L540,278 L540,116 L584,116" stroke="var(--s3)" stroke-width="2.5"
+              fill="none" marker-end="url(#aw)"/>
+        <path d="M494,324 L540,324 L540,486 L584,486" stroke="var(--s2)" stroke-width="2.5"
+              fill="none" marker-end="url(#aw)"/>
+
+        <rect x="592" y="70" width="408" height="92" rx="12" fill="var(--panel2)" stroke="var(--s3)" stroke-width="2"/>
+        <text x="614" y="106" font-size="18" font-weight="700" fill="var(--s3)">score below 0.10 or above 0.90</text>
+        <text x="614" y="136" font-size="20" font-weight="650" fill="var(--ink)">answer it yourself, no big model</text>
+
+        <rect x="592" y="440" width="408" height="92" rx="12" fill="var(--panel2)" stroke="var(--s2)" stroke-width="2"/>
+        <text x="614" y="476" font-size="18" font-weight="700" fill="var(--s2)">score between 0.10 and 0.90</text>
+        <text x="614" y="506" font-size="20" font-weight="650" fill="var(--ink)">escalate to the large model</text>
+      </svg>
+    </div>
+  </div>
+
+  <footer>
+    <div>
+      <div class="repolab">Code, raw data, analysis</div>
+      <div class="repo">github.com/ManankumarThakkar/jev-escalation-gate</div>
+    </div>
+    <div class="caveat">
+      SQuAD 2.0, 200 items per slice, seeded and reproducible. Calibration error
+      0.047 against a 0.039 noise floor. Latency measured
+      through a third party proxy, so treat it as an upper bound. No large model baseline was run.
+    </div>
+  </footer>
+
+</div>
+<script>
+  function fit(){const s=document.getElementById('stage');
+    const k=Math.min(1,window.innerWidth/1920,window.innerHeight/1080);
+    s.style.transform='scale('+k+')';}
+  addEventListener('resize',fit);fit();
+</script></body></html>
